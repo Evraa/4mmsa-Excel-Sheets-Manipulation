@@ -257,9 +257,13 @@ def fill_main(main_file, source_1, mian_extra = True):
                 if skip_5_rows > 0:
                     skip_5_rows -= 1
                     continue
-                for cell in row_src:
+
+                for i, cell in enumerate(row_src):
                     if cell == None:
                         continue
+                    
+                    if i >= 5:
+                        break
                     try:
                         if mian_extra:
                             new_cell = dst_sheet.cell(row=cell.row, column=cell.col_idx, value= cell.value)
@@ -293,10 +297,58 @@ def fill_main(main_file, source_1, mian_extra = True):
     dst_writer.save()
 
     
-
+def add_avg(file_path):
+    '''
+        Add the avg grades for a sheet
+    '''
+    src_book = load_workbook(file_path)
+    src_writer = pd.ExcelWriter(file_path, engine='openpyxl') 
+    src_writer.book = src_book
     
+    dst_sheets_dic = {}
+    for src_sheet in src_book.worksheets:
+        skip_5_rows = 5
+        sevens = []
+        threes = []
+        # last_idx = None
+        # empty_flag = False
+
+        for row_src in src_sheet.rows:
+            if skip_5_rows > 0:
+                skip_5_rows -= 1
+                continue
+            
+            # if row_src[0].value == None or row_src[1].value == None:
+            #     empty_flag = True
+            #     break
+            
+            # if last_idx == row_src[0]:
+            #     continue
+
+            # last_idx = row_src[0].value
+
+            # sevens.append(row_src[5].value)
+            # threes.append(row_src[10].value)
+            if row_src[2].value != None and row_src[3].value != None and row_src[4].value != None:
+                sevens.append((row_src[2].value+row_src[3].value+row_src[4].value)*0.7)
+            if row_src[5].value != None and row_src[6].value != None and row_src[7].value != None:
+                threes.append((row_src[6].value+row_src[7].value+row_src[8].value)*0.3)
+
+
+        # if not empty_flag:
+        if len(sevens) > 0:
+            src_sheet['F4'] = np.average(np.array(sevens))
+        if len(threes) > 0:
+            src_sheet['J4'] = np.average(np.array(threes))
+        dst_sheets_dic [src_sheet.title] = src_sheet
+
+    src_writer.sheets = dst_sheets_dic
+    src_writer.save()
+
 
 if __name__ == "__main__":
+    
+    # add_avg("dst/جروب A - استمارة تقييم مهرجان 2020 - المستوى الاول .xlsx")
     
     if os.listdir("dst/") == []:
         print (f'Error: no destination files!')
@@ -305,9 +357,10 @@ if __name__ == "__main__":
         print (f'Error: no mian source files!')
     
     if os.listdir("src_extra/") == []:
-        print (f'Error: no extra source files!')
+        print (f'Error: no extra files!')
         
     dst_path = "dst/" + os.listdir("dst/")[0]
+    input("Should I start working?")
     for src_folders in ["src_main/", "src_extra/"]:
         srcs = os.listdir(src_folders)
         if src_folders.split("_")[1] == "main/":
@@ -317,7 +370,11 @@ if __name__ == "__main__":
         for src in srcs:
             src_path = src_folders + src
             fill_main(dst_path, src_path, mian_extra=mian_extra)
-    
+
+    print("Done, will add the avg")
+    input("OK?")
+    file_at_dst = dst_path
+    add_avg(file_at_dst)
 
     # dest = "استمارة تقييم مهرجان 2020.xlsx"
     # source_1 = "ا.ابونا اغسطينوس كامل - لحن تين او اوشت (( او )) طاى شورى.xlsx"
