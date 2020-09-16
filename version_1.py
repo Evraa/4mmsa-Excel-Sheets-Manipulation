@@ -127,25 +127,20 @@ def check_values_bound(file_name=None):
         if sheet['A5'].value != "م":
             print ("Error: the sixth row is not the start!!")
 
-        for row in sheet.iter_rows(min_row=6, max_col=6, values_only=True):
-            listo = list(row)
-            print (listo)
-            #exit when reach the end
-            if listo[0] == None:
-                break
-
-            four, three_1, three_2 = listo[2:5]
-            # listo[5] = int(four) + int(three_1) + int(three_2)  
-            if int(four) > 4 or int(three_1) > 3 or int(three_2) >3:
-                print (f'HUGE ERROR: file name: {file_name} \tsheet: {sheet.title} \trow_index: {listo[0]} Validation error!')
-                input("Ev")
+        skip_5_rows = 5
+        # dst_sheet = dst_book[src_sheet.title]
+        for row_src in sheet.rows:
+            if skip_5_rows > 0:
+                skip_5_rows -= 1
+                continue
+            if row_src[2].value != None:
+                if row_src[2].value > 4 or row_src[3].value > 3 or row_src[4].value > 3\
+                    or row_src[2].value <0 or row_src[3].value <0 or row_src[4].value <0 :
+                    print (f'HUGE ERROR: file name: {reverse(file_name)} \tsheet: {reverse(sheet.title)} \trow_index: {row_src[0].value} Validation error!')
+                    input("Ev")
     
-    # cells = book.worksheets[0]['A1':'A40']
-    # for cell in cells:
-        
-    #     print (cell[0].style_id)
-    #     print (cell[0]._style.fillId)
-
+    print ("All is fine")
+                        
 
 def merge_separated (source_1, source_2):
     wb = Workbook()
@@ -261,7 +256,7 @@ def fill_main(main_file, source_1, mian_extra = True):
                 for i, cell in enumerate(row_src):
                     if cell == None:
                         continue
-                    
+
                     if i >= 5:
                         break
                     try:
@@ -369,12 +364,13 @@ if __name__ == "__main__":
             mian_extra = False
         for src in srcs:
             src_path = src_folders + src
-            fill_main(dst_path, src_path, mian_extra=mian_extra)
+            check_values_bound(src_path)
+            # fill_main(dst_path, src_path, mian_extra=mian_extra)
 
     print("Done, will add the avg")
     input("OK?")
     file_at_dst = dst_path
-    add_avg(file_at_dst)
+    # add_avg(file_at_dst)
 
     # dest = "استمارة تقييم مهرجان 2020.xlsx"
     # source_1 = "ا.ابونا اغسطينوس كامل - لحن تين او اوشت (( او )) طاى شورى.xlsx"
