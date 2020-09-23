@@ -3,7 +3,8 @@ import os
 from openpyxl import load_workbook
 import numpy as np
 from openpyxl import Workbook
-from copy import copy
+# from copy import copy
+import copy
 
 
 # xls = pd.ExcelFile('ا. - لحن اللى التوزيع')
@@ -134,10 +135,14 @@ def check_values_bound(file_name=None):
                 skip_5_rows -= 1
                 continue
             if row_src[2].value != None:
-                if row_src[2].value > 4 or row_src[3].value > 3 or row_src[4].value > 3\
-                    or row_src[2].value <0 or row_src[3].value <0 or row_src[4].value <0 :
-                    print (f'HUGE ERROR: file name: {reverse(file_name)} \tsheet: {reverse(sheet.title)} \trow_index: {row_src[0].value} Validation error!')
-                    input("Ev")
+                try:
+                    if row_src[2].value > 4 or row_src[3].value > 3 or row_src[4].value > 3\
+                        or row_src[2].value <0 or row_src[3].value <0 or row_src[4].value <0 :
+                        print (f'HUGE ERROR: file name: {reverse(file_name)} \tsheet: {reverse(sheet.title)} \trow_index: {row_src[0].value} Validation error!')
+                        input("Ev") 
+                except:
+                    print (f'row index: {row_src[0].value}')
+
     
     print ("All is fine")
                         
@@ -166,12 +171,12 @@ def merge_separated (source_1, source_2):
                     new_cell = sh.cell(row=cell.row, column=cell.col_idx,
                             value= cell.value)
                     if cell.has_style:
-                        new_cell.font = copy(cell.font)
-                        new_cell.border = copy(cell.border)
-                        new_cell.fill = copy(cell.fill)
-                        new_cell.number_format = copy(cell.number_format)
-                        new_cell.protection = copy(cell.protection)
-                        new_cell.alignment = copy(cell.alignment)
+                        new_cell.font = copy.copy(cell.font)
+                        new_cell.border = copy.copy(cell.border)
+                        new_cell.fill = copy.copy(cell.fill)
+                        new_cell.number_format = copy.copy(cell.number_format)
+                        new_cell.protection = copy.copy(cell.protection)
+                        new_cell.alignment = copy.copy(cell.alignment)
                 except AttributeError:
                     print ('sorry')
         destination = source_1.split('.')[1] + " + " +source_2.split('.')[1] + ".xlsx"
@@ -269,12 +274,12 @@ def fill_main(main_file, source_1, mian_extra = True):
                             new_cell = dst_sheet.cell(row=cell.row, column=cell.col_idx+4, value= cell.value)
                             
                         if cell.has_style:
-                            new_cell.font = copy(cell.font)
-                            new_cell.border = copy(cell.border)
-                            new_cell.fill = copy(cell.fill)
-                            new_cell.number_format = copy(cell.number_format)
-                            new_cell.protection = copy(cell.protection)
-                            new_cell.alignment = copy(cell.alignment)
+                            new_cell.font = copy.copy(cell.font)
+                            new_cell.border = copy.copy(cell.border)
+                            new_cell.fill = copy.copy(cell.fill)
+                            new_cell.number_format = copy.copy(cell.number_format)
+                            new_cell.protection = copy.copy(cell.protection)
+                            new_cell.alignment = copy.copy(cell.alignment)
                     except AttributeError:
                         # print ('sorry allignment error occured!')
                         print("\nDOUBLE!")
@@ -341,13 +346,154 @@ def add_avg(file_path):
     src_writer.save()
 
 
+def add_fraction(file_path):
+    src_book = load_workbook(file_path)
+    src_writer = pd.ExcelWriter(file_path, engine='openpyxl') 
+    src_writer.book = src_book
+    dst_sheets_dic = {}
+
+    for src_sheet in src_book.worksheets:
+        seven_avg = src_sheet['F4']
+        three_avg = src_sheet['J4']
+
+        #If sheet is empty
+        if seven_avg.value == None and three_avg.value == None:
+            continue
+        
+        if three_avg.value == None:
+            src_sheet['K4'] = seven_avg.value
+            summ = seven_avg.value
+        else:
+            src_sheet['K4'] = seven_avg.value + three_avg.value
+            summ = seven_avg.value + three_avg.value
+        #count them
+        skip_5_rows = 5
+        count = 0
+        for row_src in src_sheet.rows:
+            if skip_5_rows > 0:
+                skip_5_rows -= 1
+                continue
+
+            if row_src[0].value == None and row_src[1].value == None:
+                break
+
+            if row_src[0].value != None:  
+                count += 1
+        
+        src_sheet['L2'] = "Count"
+        src_sheet['M2'] = count
+
+        Frac = 1
+        src_sheet['L3'] = "Frac"
+        if count >= 5 and count <= 10:
+            Frac = 1.01
+
+        if count > 10 and count <= 15:
+            Frac = 1.02
+
+        if count > 15 and count <= 20:
+            Frac = 1.03
+
+        if count > 20 and count <= 25:
+            Frac = 1.04
+
+        if count > 25 and count <= 30:
+            Frac = 1.05
+            
+        if count > 30:
+            Frac = 1.06
+        
+        src_sheet['M3'] = Frac
+
+        src_sheet['L4'] = "Final"
+        src_sheet['M4'] = Frac * (summ)
+        
+        print(f'Count: {count} \tFrac: {Frac} \tSum Value: {summ} \tFinal: {Frac * (summ)}')
+        input("GOOD?")
+
+        dst_sheets_dic [src_sheet.title] = src_sheet
+
+    src_writer.sheets = dst_sheets_dic
+    src_writer.save()
+
+def get_tops (file_path):
+    src_book = load_workbook(file_path)
+    src_writer = pd.ExcelWriter(file_path, engine='openpyxl') 
+    src_writer.book = src_book
+    data = []
+    for src_sheet in src_book.worksheets:
+        count = 0
+        #If sheet is empty
+        if src_sheet['M2'].value == None:
+            print (f'Sheet: {reverse(src_sheet.title)} is EMP')
+            continue
+
+        skip_5_rows = 5
+        element = []
+        for row_src in src_sheet.rows:
+            if skip_5_rows > 0:
+                skip_5_rows -= 1
+                continue
+            
+            if row_src[0].value == None and row_src[1].value == None:
+                break
+            
+            
+            if row_src[0].value == None and row_src[1].value != None:
+                new_element = copy.deepcopy(element)
+                new_element[1] = row_src[1].value + "DOUBLE"
+                data.append(new_element)
+                
+                continue
+
+            element = []
+            points = ((row_src[2].value+row_src[3].value+row_src[4].value)*0.7)
+            if row_src[8].value != None:
+                points += ((row_src[8].value+row_src[6].value+row_src[7].value)*0.3)
+
+            element.append (points) #points
+            element.append (row_src[1].value) #name
+            element.append (src_sheet.title) #church
+            data.append(element)
+            count += 1
+            
+
+        print (f'From: {reverse(src_sheet.title)} \tread {count}')
+    data.sort(reverse=True, key= lambda x: x[0])
+    print (data[0])
+    input("ev")
+
+def get_total (file_path):
+    src_book = load_workbook(file_path)
+    src_writer = pd.ExcelWriter(file_path, engine='openpyxl') 
+    src_writer.book = src_book
+    count = 0
+    for src_sheet in src_book.worksheets:
+        if src_sheet['M2'].value != None:
+            count += src_sheet['M2'].value
+    return count
+    
+
 if __name__ == "__main__":
     
-    # add_avg("dst/جروب A - استمارة تقييم مهرجان 2020 - المستوى الاول .xlsx")
+    # file_path = "dst/" + "جروب A - استمارة تقييم مهرجان 2020 - المستوى الثالث.xlsx"
+    # add_fraction(file_path)
+    # input("stop")
     
+    # file_path = "dst/" + 'جروب A - استمارة تقييم مهرجان 2020 - المستوى الثالث.xlsx'
+    # get_tops(file_path)
+    # input("stop")
+    
+    files = os.listdir("dst/")
+    total = 0
+    for folder_ in files:
+        file_path = "dst/" + folder_
+        total += get_total(file_path)
+    print (total)
+    input("e")
     if os.listdir("dst/") == []:
         print (f'Error: no destination files!')
-
+    
     if os.listdir("src_main/") == []:
         print (f'Error: no mian source files!')
     
@@ -365,12 +511,14 @@ if __name__ == "__main__":
         for src in srcs:
             src_path = src_folders + src
             check_values_bound(src_path)
-            # fill_main(dst_path, src_path, mian_extra=mian_extra)
+            fill_main(dst_path, src_path, mian_extra=mian_extra)
 
     print("Done, will add the avg")
     input("OK?")
     file_at_dst = dst_path
-    # add_avg(file_at_dst)
+    add_avg(file_at_dst)
+    
+    
 
     # dest = "استمارة تقييم مهرجان 2020.xlsx"
     # source_1 = "ا.ابونا اغسطينوس كامل - لحن تين او اوشت (( او )) طاى شورى.xlsx"
